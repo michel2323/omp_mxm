@@ -5,6 +5,7 @@
 #include <omp.h>
 #include <cstdio> 
 #include <unistd.h>
+#include <numa.h>
 #include <hbwmalloc.h>
 #include <libxsmm.h>
 #define DEF_RESTRICT restrict
@@ -17,18 +18,19 @@ using namespace std;
 int main (int argc, char * argv[])
 
 {
-  if(argc < 4) {
+  if(argc < 5) {
     printf("Please enter size as argument\n");
     exit(1);
   }
   long int n=atoi(argv[1]);
   long int m=atoi(argv[2]);
   long int l=atoi(argv[3]);
+  long int ram=atoi(argv[4]);
   void libxsmm_init(void);
   libxsmm_dmmfunction xsmm_dgemm;
   xsmm_dgemm=libxsmm_dmmdispatch((int) n, (int) m, (int) l,
         NULL, NULL, NULL, NULL, NULL,NULL, NULL);
-  long int nel=(long int) 4000./(((double) (m*l*8))/(1024.*1024.));
+  long int nel=(long int) ram/(((double) (m*l*8))/(1024.*1024.));
   double angle;
   long int i,j,k;
   double pi = 3.141592653589793;
@@ -44,6 +46,9 @@ int main (int argc, char * argv[])
   double * DEF_RESTRICT a=(double*) malloc(sizeof(double)*n*m); 
   double * DEF_RESTRICT b=(double*) malloc(sizeof(double)*nel*m*l); 
   double * DEF_RESTRICT c=(double*) malloc(sizeof(double)*nel*n*l); 
+  //double * DEF_RESTRICT a=(double*) numa_alloc_onnode(sizeof(double)*n*m,4); 
+  //double * DEF_RESTRICT b=(double*) numa_alloc_onnode(sizeof(double)*nel*m*l,4); 
+  //double * DEF_RESTRICT c=(double*) numa_alloc_onnode(sizeof(double)*nel*n*l,4); 
 #endif
   cout << "\n";
   cout << "  Compute matrix product C = A * B.\n";
@@ -63,8 +68,6 @@ int main (int argc, char * argv[])
   s = 1.0 / sqrt ( ( double ) ( n ) );
   double wtime0 = omp_get_wtime ( );
   double wtime1;
-  int alpha=1;
-  int beta=0;
 
 # pragma omp parallel 
   {
@@ -81,12 +84,9 @@ int main (int argc, char * argv[])
 # pragma omp parallel
     {
       for(int i=0;i<10;i++) {
-# pragma omp for nowait 
+# pragma omp for 
         for(int iel=0;iel<nel;iel++) { 
-          xsmm_dgemm(a, &b[iel*m*l], &c[iel*l*n]);
-          //libxsmm_gemm(NULL, NULL, n, m, l,
-              //NULL, a, NULL, &b[iel*m*l], NULL,
-              //NULL, &c[iel*l*n], NULL);
+          //xsmm_dgemm(a, &b[iel*m*l], &c[iel*l*n]);
         }
       }
     }
@@ -103,6 +103,9 @@ int main (int argc, char * argv[])
   free(a);
   free(b);
   free(c);
+  //numa_free(a,sizeof(double)*n*m);
+  //numa_free(b,sizeof(double)*nel*m*l);
+  //numa_free(c,sizeof(double)*nel*n*l);
 #endif
 return 0;
 }
