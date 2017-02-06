@@ -5,18 +5,18 @@
 #include <omp.h>
 #include <cstdio> 
 #include <unistd.h>
+#ifdef HBW
 #include <hbwmalloc.h>
+#endif
 #include <libxsmm.h>
-#define DEF_RESTRICT restrict
+#define DEF_RESTRICT __restrict__
 
 
 using namespace std;
 
-#define GEMM(REAL) LIBXSMM_FSYMBOL(LIBXSMM_TPREFIX(REAL, gemm))
+//#define GEMM(REAL) LIBXSMM_FSYMBOL(LIBXSMM_TPREFIX(REAL, gemm))
 
-int main (int argc, char * argv[])
-
-{
+int main (int argc, char * argv[]) {
   if(argc < 4) {
     printf("Please enter size as argument\n");
     exit(1);
@@ -28,7 +28,7 @@ int main (int argc, char * argv[])
   libxsmm_dmmfunction xsmm_dgemm;
   xsmm_dgemm=libxsmm_dmmdispatch((int) n, (int) m, (int) l,
         NULL, NULL, NULL, NULL, NULL,NULL, NULL);
-  long int nel=(long int) 4000./(((double) (m*l*8))/(1024.*1024.));
+  long int nel=(long int) 100./(((double) (m*l*8))/(1024.*1024.));
   double angle;
   long int i,j,k;
   double pi = 3.141592653589793;

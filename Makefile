@@ -1,17 +1,17 @@
 
-
-CXX=icc
-OMP=-qopenmp
+GITDIR=/home/michel/git
+CXX=g++
+OMP=-fopenmp
 #CFLAGS=-O3 -march=native -xMIC-AVX512 -qopt-report=5 -DHBW 
-CFLAGS=-g -O3 -xMIC-AVX512 -qopt-report=5 -restrict #-DHBW
-CFLAGS+= -I/homes/schanen/git/libxsmm/include
+CFLAGS=-g -O3 
+CFLAGS+= -I$(GITDIR)/libxsmm/include
 #-DMEMKIND #-DHBW 
-LFLAGS=-L/homes/schanen/git/libxsmm/lib -lmemkind -lxsmm 
+LFLAGS=-L$(GITDIR)/libxsmm/lib -lxsmm -ldl -lxsmmnoblas 
 
 all: mxm_openmp
 
 mxm_openmp: mxm_openmp.o
-	$(CXX) $(OMP) $(CFLAGS) $(LFLAGS) -o $@ $< /homes/schanen/git/libxsmm/lib/libxsmm.a /homes/schanen/git/libxsmm/lib/libxsmmext.a 
+	$(CXX) $(OMP) $(CFLAGS) -o $@ $< $(LFLAGS) 
 
 %.o: %.cpp
 	$(CXX) $(OMP) $(CFLAGS) -c $<
